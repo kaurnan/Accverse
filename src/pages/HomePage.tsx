@@ -5,10 +5,10 @@ import Hero from "../components/Hero"
 import ServiceCard from "../components/ServiceCard"
 import TestimonialCard from "../components/TestimonialCard"
 import ChatWidget from "../components/ChatWidget"
-import { useAuth } from "../components/AuthContext"
+// import { useAuth } from "../components/AuthContext"
 
 const HomePage = () => {
-  const { isAuthenticated } = useAuth()
+  // const { isAuthenticated } = useAuth()
 
   const services = [
     {
@@ -225,7 +225,19 @@ const HomePage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            {isAuthenticated ? (
+          <Link
+            to="/booking"
+            className="px-8 py-3 bg-white text-blue-700 font-medium rounded-md hover:bg-blue-50 transition-colors"
+          >
+            Book a Consultation
+          </Link>
+          <Link
+            to="/contact"
+            className="px-8 py-3 bg-transparent border border-white text-white font-medium rounded-md hover:bg-blue-800 transition-colors"
+          >
+            Contact Us
+          </Link>
+            {/* {isAuthenticated ? (
               <>
                 <Link
                   to="/dashboard"
@@ -255,7 +267,7 @@ const HomePage = () => {
                   Contact Us
                 </Link>
               </>
-            )}
+            )} */}
           </div>
         </div>
       </section>

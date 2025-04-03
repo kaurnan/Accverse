@@ -19,6 +19,7 @@ apiClient.interceptors.request.use(
     }
     // Ensure content-type is set for all requests
     config.headers["Content-Type"] = "application/json"
+    console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`)
     return config
   },
   (error) => Promise.reject(error),
@@ -26,20 +27,45 @@ apiClient.interceptors.request.use(
 
 // Add response interceptor to handle errors
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response) => {
+    console.log(`Response from ${response.config.url}: Status ${response.status}`)
+    return response
+  },
+  async (error) => {
     // Handle specific error cases
     if (error.response) {
       // Server responded with an error status
-      const { status, data } = error.response
+      const { status, data, config } = error.response
+      console.error(`Server error: ${status}`, data)
 
-      // Handle 401 Unauthorized
-      if (status === 401) {
-        // Clear local storage if token is invalid
-        if (!window.location.pathname.includes("/login")) {
-          localStorage.removeItem("token")
-          localStorage.removeItem("user")
-          window.location.href = "/login"
+      // Handle 401 Unauthorized - Try to refresh token if not already trying to refresh
+      if (status === 401 && !config.url.includes('/auth/refresh-token')) {
+        try {
+          console.log("Token expired, attempting to refresh...")
+          // Get the current token from localStorage (don't use the one from closure)
+          const currentToken = localStorage.getItem("token")
+
+          // Only attempt refresh if we actually have a token
+          if (currentToken) {
+            const refreshResult = await refreshToken()
+            if (refreshResult) {
+              // Retry the original request with new token
+              const newToken = localStorage.getItem("token")
+              config.headers.Authorization = `Bearer ${newToken}`
+              return axios(config)
+            }
+          } else {
+            console.log("No token available for refresh")
+          }
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError)
+          // Only redirect to login if we're not already there
+          if (!window.location.pathname.includes('/login')) {
+            console.log("Redirecting to login after failed token refresh")
+            localStorage.removeItem("token")
+            localStorage.removeItem("user")
+            window.location.href = "/login"
+          }
         }
       }
 
@@ -49,9 +75,34 @@ apiClient.interceptors.response.use(
     }
 
     // Network error or other issues
+    console.error("Network or other error:", error.message)
     return Promise.reject(new Error("Network error. Please check your connection."))
   },
 )
+
+export const refreshToken = async (): Promise<string | null> => {
+  try {
+    console.log("Calling refresh token endpoint")
+     // Get the current token (not from closure)
+     const currentToken = localStorage.getItem("token")
+    
+     // Don't attempt to refresh if no token exists
+     if (!currentToken) {
+       console.log("No token to refresh")
+       return null
+     }
+    const response = await apiClient.post("/auth/refresh-token", {})
+    if (response.data && response.data.token) {
+      console.log("Token refreshed successfully")
+      localStorage.setItem("token", response.data.token)
+      return response.data.token
+    }
+    return null
+  } catch (error) {
+    console.error("Error refreshing token:", error)
+    throw error
+  }
+}
 
 // Auth API calls
 export const login = async (email: string, password: string) => {
@@ -66,6 +117,49 @@ export const logout = async () => {
   } catch (error) {
     console.error("Logout error:", error)
   }
+}
+
+export const googleAuth = async (data: {
+  firebase_token: string
+  email: string
+  name: string
+  firebase_uid: string
+}) => {
+  console.log("Calling googleAuth with data:", {
+    ...data,
+    firebase_token: data.firebase_token ? "TOKEN_HIDDEN_FOR_SECURITY" : null
+  })
+  const response = await apiClient.post("/auth/google", data)
+  return response.data
+}
+
+export const completeGoogleRegistration = async (userData: {
+  firebase_uid: string
+  firebase_token: string
+  email: string
+  name: string
+  phone?: string
+  address?: string
+  city?: string
+  state?: string
+  zipCode?: string
+}) => {
+  console.log("Completing Google registration:", {
+    ...userData,
+    firebase_token: "TOKEN_HIDDEN_FOR_SECURITY"
+  })
+  const response = await apiClient.post("/auth/google/complete-registration", userData)
+  return response.data
+}
+
+export const verifyGoogleToken = async (token: string) => {
+  const response = await apiClient.post("/auth/google/verify", { token })
+  return response.data
+}
+
+export const linkGoogleAccount = async (token: string) => {
+  const response = await apiClient.post("/auth/google/link", { token })
+  return response.data
 }
 
 export const register = async (userData: {
@@ -220,6 +314,58 @@ export const getTeamsMeetings = async () => {
   const response = await apiClient.get("/calendar/events/teams")
   return response.data
 }
+
+export const serviceService = {
+  getServices: async () => {
+    const response = await apiClient.get("/services");
+    return response.data;
+  },
+  getServiceDetails: async (id: number) => {
+    const response = await apiClient.get(`/services/${id}`);
+    return response.data;
+  },
+  getServiceCategories: async () => {
+    const response = await apiClient.get("/services/categories");
+    return response.data;
+  },
+};
+
+// Appointment API endpoints
+export const appointmentService = {
+  getAppointments: async () => {
+    const response = await apiClient.get("/appointments");
+    return response.data;
+  },
+  createAppointment: async (appointmentData: {
+    service_id: number;
+    date: string;
+    time: string;
+    notes?: string;
+  }) => {
+    const response = await apiClient.post("/appointments", appointmentData);
+    return response.data;
+  },
+  getAppointmentDetails: async (id: number) => {
+    const response = await apiClient.get(`/appointments/${id}`);
+    return response.data;
+  },
+  updateAppointment: async (id: number, data: { notes?: string }) => {
+    const response = await apiClient.put(`/appointments/${id}`, data);
+    return response.data;
+  },
+  cancelAppointment: async (id: number) => {
+    const response = await apiClient.delete(`/appointments/${id}`);
+    return response.data;
+  },
+  getAvailableSlots: async (date: string, serviceId?: number) => {
+    let url = `/appointments/available?date=${date}`;
+    if (serviceId) {
+      url += `&service_id=${serviceId}`;
+    }
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+};
 
 // Payment API calls
 export const getPayments = async () => {

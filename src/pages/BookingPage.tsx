@@ -1,8 +1,13 @@
 import React from 'react';
 import { Calendar, Clock, CheckCircle, Users, Video } from 'lucide-react';
 import TeamsBookingForm from '../components/TeamsBookingForm';
+import { useNavigate } from "react-router-dom"
+import {useAuth} from "../components/AuthContext"
 
 const BookingPage = () => {
+  const {isAuthenticated} = useAuth()
+  const navigate = useNavigate();
+
   return (
     <div className="bg-gray-50 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12,7 +17,17 @@ const BookingPage = () => {
             Schedule a consultation with one of our experts using Microsoft Teams. Connect your Microsoft account to manage the meeting in your calendar.
           </p>
         </div>
-        
+        {isAuthenticated && (
+        <div className="text-center py-8">
+          <button
+            onClick={() => navigate('/appointments')}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Calendar className="mr-2 h-5 w-5" />
+            View My Appointments
+          </button>
+        </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div>
             <div className="bg-white rounded-xl shadow-md p-8">

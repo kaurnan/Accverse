@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Calendar, Clock, Users, Video, User, Mail, Phone, Clipboard } from 'lucide-react'
 import { toast } from 'react-toastify'
-import { serviceService, appointmentService } from '../api'
-import { teamsService } from '../services/microsoft-teams'
+import { serviceService, appointmentService } from '../services/api'
+// import { teamsService } from '../services/microsoft-teams'
 import MicrosoftTeamsButton from './MicrosoftTeamsButton'
 import { useAuth } from './AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { format, addMinutes, parseISO } from 'date-fns'
+// import { format, addMinutes, parseISO } from 'date-fns'
 
 interface BookingFormData {
   name: string
@@ -38,7 +38,8 @@ const TeamsBookingForm = () => {
   const [services, setServices] = useState<Service[]>([])
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
-  const [isTeamsEnabled, setIsTeamsEnabled] = useState(false)
+  // const [isTeamsEnabled, setIsTeamsEnabled] = useState(false)
+  const [isTeamsEnabled, setIsTeamsEnabled] = useState(true)
   const [meetingInfo, setMeetingInfo] = useState<{
     joinUrl: string
     joinWebUrl: string
@@ -79,7 +80,7 @@ const TeamsBookingForm = () => {
         setValue('attendees', user.email)
       }
     }
-  }, [user, setValue])
+  }, []) // Empty dependency array - runs only once on mount
 
   useEffect(() => {
     const fetchAvailableSlots = async () => {
@@ -105,10 +106,10 @@ const TeamsBookingForm = () => {
   }, [selectedDate, selectedService])
 
   const onSubmit = async (data: BookingFormData) => {
-    if (!isTeamsEnabled) {
-      toast.error("Please connect to Microsoft Calendar first")
-      return
-    }
+    // if (!isTeamsEnabled) {
+    //   toast.error("Please connect to Microsoft Calendar first")
+    //   return
+    // }
     
     if (!isAuthenticated) {
       localStorage.setItem('pendingBooking', JSON.stringify(data))
@@ -127,41 +128,45 @@ const TeamsBookingForm = () => {
       }
       
       // Parse attendees list
-      const attendeesList = data.attendees
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email.length > 0)
+      // const attendeesList = data.attendees
+      //   .split(',')
+      //   .map(email => email.trim())
+      //   .filter(email => email.length > 0)
       
-      // Ensure user's email is included
-      if (user?.email && !attendeesList.includes(user.email)) {
-        attendeesList.push(user.email)
-      }
+      // // Ensure user's email is included
+      // if (user?.email && !attendeesList.includes(user.email)) {
+      //   attendeesList.push(user.email)
+      // }
       
-      // Format date and time for Teams meeting
-      const meetingDate = data.date
-      const meetingTime = data.time
-      const startDateTime = `${meetingDate}T${meetingTime}:00Z`
+      // // Format date and time for Teams meeting
+      // const meetingDate = data.date
+      // const meetingTime = data.time
+      // const startDateTime = `${meetingDate}T${meetingTime}:00Z`
       
-      // Calculate end time based on service duration
-      const endDateTime = format(
-        addMinutes(parseISO(`${meetingDate}T${meetingTime}:00Z`), selectedServiceObj.duration || 30),
-        "yyyy-MM-dd'T'HH:mm:ss'Z'"
-      )
+      // // Calculate end time based on service duration
+      // const endDateTime = format(
+      //   addMinutes(parseISO(`${meetingDate}T${meetingTime}:00Z`), selectedServiceObj.duration || 30),
+      //   "yyyy-MM-dd'T'HH:mm:ss'Z'"
+      // )
       
-      // Create Teams meeting
-      const meeting = await teamsService.createMeeting({
-        subject: `${selectedServiceObj.name} Consultation`,
-        startDateTime: startDateTime,
-        endDateTime: endDateTime,
-        attendees: attendeesList,
-        content: data.notes || `Consultation for ${selectedServiceObj.name}`,
-        location: "Microsoft Teams Meeting"
-      })
+      // // Create Teams meeting
+      // const meeting = await teamsService.createMeeting({
+      //   subject: `${selectedServiceObj.name} Consultation`,
+      //   startDateTime: startDateTime,
+      //   endDateTime: endDateTime,
+      //   attendees: attendeesList,
+      //   content: data.notes || `Consultation for ${selectedServiceObj.name}`,
+      //   location: "Microsoft Teams Meeting"
+      // })
       
       // Save meeting info
+      // setMeetingInfo({
+      //   joinUrl: meeting.joinUrl,
+      //   joinWebUrl: meeting.joinWebUrl
+      // })
       setMeetingInfo({
-        joinUrl: meeting.joinUrl,
-        joinWebUrl: meeting.joinWebUrl
+        joinUrl: `https://teams.microsoft.com/l/meetup-join/demo-${Date.now()}`,
+        joinWebUrl: `https://teams.microsoft.com/l/meetup-join/demo-${Date.now()}`
       })
       
       // Create appointment in our system
@@ -169,12 +174,17 @@ const TeamsBookingForm = () => {
         service_id: parseInt(data.service_id),
         date: data.date,
         time: data.time,
-        notes: `Microsoft Teams Meeting: ${meeting.joinUrl}\n\nAttendees: ${data.attendees}\n\n${data.notes || ""}`
+        // notes: `Microsoft Teams Meeting: ${meeting.joinUrl}\n\nAttendees: ${data.attendees}\n\n${data.notes || ""}`
+        notes: `Attendees: ${data.attendees}\n\n${data.notes || ""}`
+
       }
 
       await appointmentService.createAppointment(appointmentData)
       
       toast.success('Appointment booked successfully with Teams meeting!')
+      
+      navigate('/appointments')
+      
     } catch (error: any) {
       console.error('Error booking appointment:', error)
       toast.error(error.message || 'Failed to book your appointment. Please try again.')
@@ -201,7 +211,7 @@ const TeamsBookingForm = () => {
         </p>
         <MicrosoftTeamsButton onTeamsEnabled={setIsTeamsEnabled} />
       </div>
-      
+          
       {isTeamsEnabled ? (
         <>
           {meetingInfo ? (

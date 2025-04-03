@@ -31,7 +31,9 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ appointment, onCancel
   }
 
   const teamsUrl = getTeamsUrl()
-  const formattedDate = format(parseISO(appointment.appointment_date), "MMMM d, yyyy")
+  const formattedDate = appointment.appointment_date
+    ? format(parseISO(appointment.appointment_date), "MMMM d, yyyy")
+    : "Invalid Date"
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">

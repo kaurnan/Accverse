@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle } from 'lucide-react';
-import { useAuth } from './AuthContext';
+// import { useAuth } from './AuthContext';
 
 const Hero = () => {
-  const { isAuthenticated, user } = useAuth();
+  // const { isAuthenticated, user } = useAuth();
 
   return (
     <div className="relative bg-gradient-to-r from-blue-900 to-blue-700 overflow-hidden">
@@ -46,7 +46,19 @@ const Hero = () => {
             </div>
             
             <div className="mt-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              {isAuthenticated ? (
+            <Link 
+              to="/booking" 
+              className="px-6 py-3 bg-white text-blue-700 font-medium rounded-md hover:bg-blue-50 transition-colors flex items-center justify-center"
+            >
+              Book a Consultation <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+            <Link 
+              to="/pricing" 
+              className="px-6 py-3 bg-transparent border border-white text-white font-medium rounded-md hover:bg-blue-800 transition-colors flex items-center justify-center"
+            >
+              View Pricing Plans
+            </Link>
+              {/* {isAuthenticated ? (
                 <>
                   <Link 
                     to="/dashboard" 
@@ -76,7 +88,7 @@ const Hero = () => {
                     View Pricing Plans
                   </Link>
                 </>
-              )}
+              )} */}
             </div>
           </div>
           

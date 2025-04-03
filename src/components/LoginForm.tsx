@@ -9,6 +9,7 @@ import { useAuth } from "./AuthContext"
 import * as api from "../services/api"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
+import GoogleAuthButton from "./GoogleAuthButton"
 
 interface FormData {
   email: string
@@ -57,7 +58,7 @@ const LoginForm = () => {
 
       // Store token and user data
       localStorage.setItem("token", response.token)
-      localStorage.setItem("user", JSON.stringify(response.user))
+      localStorage.setItem("user", JSON.stringify({...response.user, provider: 'api'}))
 
       // Remember me functionality
       if (data.rememberMe) {
@@ -67,7 +68,7 @@ const LoginForm = () => {
       }
 
       // Update auth context
-      login(response.user)
+      login({...response.user, provider: 'api'}, response.token)
 
       toast.success("Login successful!")
 
@@ -115,6 +116,17 @@ const LoginForm = () => {
             </div>
           </div>
         )}
+
+        {/* Google Auth Button */}
+        <div className="mb-4">
+          <GoogleAuthButton />
+        </div>
+
+        <div className="relative flex py-3 items-center">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="flex-shrink mx-4 text-gray-400 text-xs">OR</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>

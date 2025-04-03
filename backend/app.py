@@ -13,7 +13,9 @@ from methods import (
     get_calendar_events, create_calendar_event, update_calendar_event,
     delete_calendar_event, sync_external_calendar,
     get_knowledge_base, get_knowledge_article, 
+    google_auth, complete_google_registration,
 )
+from firebase_setup  import verify_firebase_token
 from microsoft_teams import MicrosoftTeamsIntegration
 from config import app_config
 import utils
@@ -55,6 +57,97 @@ def register():
     data = request.get_json()
     return register_user(data)
 
+@app.route('/api/auth/refresh-token', methods=['POST'])
+def refresh_token():
+    try:
+        token = request.headers.get('Authorization')
+        if not token or not token.startswith('Bearer '):
+            return jsonify({"error": "Missing or invalid token"}), 401
+        
+        token = token.replace('Bearer ', '')
+        user_id = validate_token(token)
+        
+        if not user_id:
+            return jsonify({"error": "Invalid or expired token"}), 401
+        
+        # Get user info for the new token
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"error": "Database connection error"}), 500
+        
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, email, role FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        # Generate a new token
+        new_token = generate_token(user['id'], user['email'], user.get('role'))
+        
+        return jsonify({
+            "message": "Token refreshed successfully",
+            "token": new_token
+        }), 200
+    except Exception as e:
+        logger.error(f"Token refresh error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/auth/google', methods=['POST'])
+def google_auth_route():
+    try:
+        data = request.get_json()
+        logger.info(f"Google auth request received: {data}")
+        
+        if not data or not data.get('firebase_token'):
+            return jsonify({"error": "Missing required fields"}), 400
+        
+        return google_auth(data)
+    except Exception as e:
+        logger.error(f"Google auth error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/auth/google/complete-registration', methods=['POST'])
+def complete_google_reg_route():
+    try:
+        data = request.get_json()
+        logger.info(f"Google complete registration request received")
+        
+        if not data or not data.get('firebase_uid') or not data.get('firebase_token'):
+            return jsonify({"error": "Missing required fields"}), 400
+        
+        return complete_google_registration(data)
+    except Exception as e:
+        logger.error(f"Google complete registration error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/auth/google/verify', methods=['POST'])
+def verify_google_token_route():
+    try:
+        data = request.get_json()
+        if not data or not data.get('token'):
+            return jsonify({"error": "Missing token"}), 400
+        
+        # Verify Firebase token
+        decoded_token = verify_firebase_token(data.get('token'))
+        if not decoded_token:
+            return jsonify({"error": "Invalid token"}), 401
+        
+        return jsonify({
+            "valid": True,
+            "user": {
+                "uid": decoded_token.get('uid'),
+                "email": decoded_token.get('email'),
+                "name": decoded_token.get('name', ''),
+                "email_verified": decoded_token.get('email_verified', False)
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Google token verification error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    
 @app.route('/api/auth/send-otp', methods=['POST'])
 def send_otp():
     data = request.get_json()

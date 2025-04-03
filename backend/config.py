@@ -2,7 +2,7 @@ import os
 
 # Main application configuration
 class AppConfig:
-    DEBUG = os.environ.get('FLASK_DEBUG', 'True') == 'True'
+    DEBUG = os.environ.get('FLASK_DEBUG', 'False') == 'True'
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     API_PREFIX = '/api'
     CORS_HEADERS = 'Content-Type'
@@ -44,6 +44,14 @@ class TeamsConfig:
     MS_REDIRECT_URI = os.environ.get('MS_REDIRECT_URI', 'http://localhost:5000/api/auth/teams/callback')
     TEAMS_ENABLED = os.environ.get('TEAMS_ENABLED', 'False') == 'True'
 
+# Firebase configuration
+class FirebaseConfig:
+    PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', 'accverse-8bd06')
+    # Path to service account JSON file - in production, use environment variables
+    SERVICE_ACCOUNT_PATH = os.environ.get('FIREBASE_SERVICE_ACCOUNT_PATH', os.path.join(os.getcwd(), 'firebase-service-account.json'))
+    # For proper Firebase Admin initialization
+    os.environ['GOOGLE_CLOUD_PROJECT'] = PROJECT_ID
+    
 # Create instances for import
 app_config = AppConfig()
 db_config = DatabaseConfig()
@@ -51,3 +59,4 @@ jwt_config = JWTConfig()
 email_config = EmailConfig()
 upload_config = UploadConfig()
 teams_config = TeamsConfig()
+firebase_config = FirebaseConfig()

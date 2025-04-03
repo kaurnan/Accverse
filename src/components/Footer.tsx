@@ -14,7 +14,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center mb-4">
               <Calculator className="h-8 w-8 text-blue-400" />
-              <span className="ml-2 text-xl font-bold">TaxPro Solutions</span>
+              <span className="ml-2 text-xl font-bold">Accverse</span>
             </div>
             <p className="text-gray-400 mb-4">
               Professional accounting and tax services for individuals and businesses. We help you navigate the complex world of finance with ease.
@@ -103,7 +103,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center">
                 <Mail className="h-5 w-5 text-blue-400 mr-2" />
-                <span className="text-gray-400">info@taxprosolutions.com.au</span>
+                <span className="text-gray-400">info@Accverse.com.au</span>
               </li>
             </ul>
           </div>
@@ -112,7 +112,7 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              &copy; {new Date().getFullYear()} TaxPro Solutions. All rights reserved.
+              &copy; {new Date().getFullYear()} Accverse. All rights reserved.
             </p>
             <div className="mt-4 md:mt-0">
               <ul className="flex space-x-6 text-sm">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 import { Calculator, Shield } from 'lucide-react';
 import LoginForm from '../components/LoginForm';
 
@@ -24,7 +24,7 @@ const LoginPage = () => {
               <div className="relative z-10">
                 <div className="flex items-center mb-8">
                   <Calculator className="h-10 w-10 text-blue-300" />
-                  <span className="ml-3 text-2xl font-bold">TaxPro Solutions</span>
+                  <span className="ml-3 text-2xl font-bold">Accverse</span>
                 </div>
                 
                 <h2 className="text-3xl font-bold mb-6">Client Portal Access</h2>

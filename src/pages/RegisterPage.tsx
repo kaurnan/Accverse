@@ -9,7 +9,7 @@ const RegisterPage = () => {
           Create your client account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Join TaxPro Solutions to access our services and manage your appointments
+          Join Accverse to access our services and manage your appointments
         </p>
       </div>
 

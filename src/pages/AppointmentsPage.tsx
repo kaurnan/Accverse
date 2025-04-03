@@ -1,14 +1,24 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Calendar, Clock, FileText, } from 'lucide-react';
+import { Calendar, Plus } from 'lucide-react';
 import * as api from '../services/api';
+import { 
+  Table, 
+  TableBody, 
+  TableCaption, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '../components/ui/table';
+import AppointmentCard from '../components/AppointmentCard';
 
 interface Appointment {
   id: number;
   service_name: string;
-  date: string;
-  time: string;
+  appointment_date: string;
+  appointment_time: string;
   status: string;
   notes?: string;
 }
@@ -16,15 +26,20 @@ interface Appointment {
 const AppointmentsPage = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'table'>('table');
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const data = await api.getAppointments();
         setAppointments(data.appointments || []);
       } catch (error) {
         console.error("Error fetching appointments:", error);
+        setError("Unable to load your appointments. Please try again later.");
         toast.error("Failed to load your appointments");
       } finally {
         setLoading(false);
@@ -47,8 +62,32 @@ const AppointmentsPage = () => {
     }
   };
 
+  // Function to format date for better display
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    // We'll try again after a short delay
+    setTimeout(async () => {
+      try {
+        const data = await api.getAppointments();
+        setAppointments(data.appointments || []);
+      } catch (error) {
+        console.error("Error retrying appointment fetch:", error);
+        setError("Still unable to load your appointments. There might be a server issue.");
+        toast.error("Failed to load your appointments");
+      } finally {
+        setLoading(false);
+      }
+    }, 1000);
+  };
+
   return (
-    <div className="bg-gray-50 py-16">
+    <div className="bg-gray-50 min-h-screen py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">My Appointments</h1>
@@ -57,11 +96,34 @@ const AppointmentsPage = () => {
           </p>
         </div>
 
-        <div className="flex justify-end mb-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                viewMode === 'table' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Table View
+            </button>
+            {/* <button
+              onClick={() => setViewMode('cards')}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                viewMode === 'cards' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Card View
+            </button> */}
+          </div>
           <button
             onClick={() => navigate('/booking')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center"
           >
+            <Plus className="h-4 w-4 mr-2" />
             Book New Appointment
           </button>
         </div>
@@ -70,6 +132,22 @@ const AppointmentsPage = () => {
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-gray-600">Loading your appointments...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <div className="text-red-500 mb-4">
+              <Calendar className="inline-block h-12 w-12" />
+            </div>
+            <h2 className="text-2xl font-medium text-gray-900 mb-2">Error Loading Appointments</h2>
+            <p className="text-gray-600 mb-6">
+              {error}
+            </p>
+            <button
+              onClick={handleRetry}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         ) : appointments.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -87,71 +165,73 @@ const AppointmentsPage = () => {
               Book Your First Appointment
             </button>
           </div>
-        ) : (
-          <div className="grid gap-6">
-            {appointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden"
-              >
-                <div className="p-6">
-                  <div className="flex justify-between items-start">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                      {appointment.service_name}
-                    </h2>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                      ${
-                        appointment.status === 'confirmed'
-                          ? 'bg-green-100 text-green-800'
-                          : appointment.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }
-                    `}
-                    >
-                      {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 flex flex-col sm:flex-row sm:space-x-6">
-                    <div className="flex items-center mb-2 sm:mb-0">
-                      <Calendar className="h-5 w-5 text-gray-400 mr-2" />
-                      <span className="text-gray-700">{appointment.date}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-5 w-5 text-gray-400 mr-2" />
-                      <span className="text-gray-700">{appointment.time}</span>
-                    </div>
-                  </div>
-
-                  {appointment.notes && (
-                    <div className="mt-4 bg-gray-50 p-3 rounded-md">
-                      <div className="flex items-start">
-                        <FileText className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
-                        <span className="text-gray-700">{appointment.notes}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-6 flex justify-end space-x-4">
-                    <button
-                      onClick={() => navigate(`/appointments/${appointment.id}`)}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      View Details
-                    </button>
-                    {appointment.status !== 'cancelled' && (
-                      <button
-                        onClick={() => handleCancelAppointment(appointment.id)}
-                        className="text-red-600 hover:text-red-800 font-medium"
+        ) : viewMode === 'table' ? (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <Table>
+              <TableCaption>A list of your appointments.</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Notes</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {appointments.map((appointment) => (
+                  <TableRow key={appointment.id}>
+                    <TableCell className="font-medium">{appointment.service_name}</TableCell>
+                    <TableCell>{formatDate(appointment.appointment_date)}</TableCell>
+                    <TableCell>{appointment.appointment_time}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                          ${
+                            appointment.status === 'confirmed'
+                              ? 'bg-green-100 text-green-800'
+                              : appointment.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                          }
+                        `}
                       >
-                        Cancel
+                        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {appointment.notes || "-"}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <button
+                        onClick={() => navigate(`/appointments/${appointment.id}`)}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        View
                       </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+                      {appointment.status !== 'cancelled' && (
+                        <button
+                          onClick={() => handleCancelAppointment(appointment.id)}
+                          className="text-red-600 hover:text-red-800 font-medium ml-4"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {appointments.map((appointment) => (
+              <AppointmentCard 
+                key={appointment.id}
+                appointment={appointment}
+                onCancel={() => handleCancelAppointment(appointment.id)}
+              />
             ))}
           </div>
         )}

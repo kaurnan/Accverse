@@ -1,11 +1,10 @@
--- Database Schema for TaxPro Solutions Application
 
 -- Create database (if it doesn't exist)
 CREATE DATABASE IF NOT EXISTS Accverse;
 USE Accverse;
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -15,6 +14,8 @@ CREATE TABLE users (
     role ENUM('admin', 'client') NOT NULL DEFAULT 'client',
     verification_token VARCHAR(100),
     is_verified BOOLEAN DEFAULT FALSE,
+    firebase_uid VARCHAR(128),
+    provider VARCHAR(50),
     reset_token VARCHAR(100),
     reset_token_expiry DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

@@ -73,9 +73,9 @@ const ContactPage = () => {
                   <div className="ml-4">
                     <h3 className="text-lg font-medium text-gray-900">Email</h3>
                     <p className="mt-2 text-gray-600">
-                      General Inquiries: info@taxprosolutions.com.au<br />
-                      Support: support@taxprosolutions.com.au<br />
-                      New Business: sales@taxprosolutions.com.au
+                      General Inquiries: info@Accverse.com.au<br />
+                      Support: support@Accverse.com.au<br />
+                      New Business: sales@Accverse.com.au
                     </p>
                   </div>
                 </div>

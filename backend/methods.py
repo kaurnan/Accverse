@@ -8,10 +8,11 @@ import uuid
 from utils import send_email, generate_token, validate_token
 import random
 from microsoft_teams import MicrosoftTeamsIntegration
-
+from firebase_setup import verify_firebase_token
 teams_integration = MicrosoftTeamsIntegration()
 import logging 
 logger = logging.getLogger(__name__)
+from datetime import timedelta
 
 # Database Connection Function
 def get_db_connection():
@@ -70,6 +71,237 @@ def authenticate_user(data):
         }), 200
     else:
         return jsonify({"error": "Invalid credentials"}), 401
+
+# Firebase token verification
+# def verify_firebase_token(token):
+#     try:
+#         import firebase_admin
+#         from firebase_admin import auth, credentials
+        
+#         # Initialize Firebase Admin if not already initialized
+#         if not firebase_admin._apps:
+#             # Use service account credentials or app credentials
+#             # For simplicity, we'll use the default app initialization
+#             # In production, you'd want to use explicit credentials
+#             firebase_admin.initialize_app()
+        
+#         # Verify the Firebase token
+#         decoded_token = auth.verify_id_token(token)
+#         return decoded_token
+#     except ImportError:
+#         print("Firebase admin SDK not installed. Please install with: pip install firebase-admin")
+#         return None
+#     except Exception as e:
+#         print(f"Error verifying Firebase token: {str(e)}")
+#         return None
+
+# Google Authentication
+def google_auth(data):
+    firebase_token = data.get('firebase_token')
+    email = data.get('email')
+    name = data.get('name')
+    firebase_uid = data.get('firebase_uid')
+    
+    if not firebase_token or not email or not firebase_uid:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    # Verify Firebase token
+    try:
+        decoded_token = verify_firebase_token(firebase_token)
+        if not decoded_token or decoded_token.get('uid') != firebase_uid:
+            return jsonify({"error": "Invalid Firebase token"}), 401
+    except Exception as e:
+        return jsonify({"error": f"Firebase verification error: {str(e)}"}), 401
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection error"}), 500
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Check if user exists with this Firebase UID
+        cursor.execute(
+            "SELECT * FROM users WHERE firebase_uid = %s", 
+            (firebase_uid,)
+        )
+        user = cursor.fetchone()
+        
+        if user:
+            # User exists, generate token and return user data
+            token = generate_token(user['id'], user['email'], user['role'])
+            
+            # Update last login
+            # cursor.execute(
+            #     "UPDATE users SET last_login = NOW() WHERE id = %s", 
+            #     (user['id'],)
+            # )
+            # conn.commit()
+            
+            # Return user data and token
+            safe_user = {
+                "id": user['id'],
+                "name": user['name'],
+                "email": user['email'],
+                "role": user['role'],
+                "provider": "google",
+                "firebase_uid": user['firebase_uid'],
+                "is_verified": True  # Google oauth users are verified by default
+            }
+            
+            return jsonify({
+                "token": token,
+                "user": safe_user,
+                "isNewUser": False
+            }), 200
+        else:
+            # Check if user exists with same email
+            cursor.execute(
+                "SELECT * FROM users WHERE email = %s", 
+                (email,)
+            )
+            existing_user = cursor.fetchone()
+            
+            if existing_user:
+                # Link Firebase UID to existing account
+                cursor.execute(
+                    "UPDATE users SET firebase_uid = %s, updated_at = NOW(), is_verified = 1 WHERE id = %s", 
+                    (firebase_uid, existing_user['id'])
+                )
+                conn.commit()
+                
+                # Generate token and return user data
+                token = generate_token(existing_user['id'], existing_user['email'], existing_user['role'])
+                
+                # Update last login
+                # cursor.execute(
+                #     "UPDATE users SET last_login = NOW() WHERE id = %s", 
+                #     (existing_user['id'],)
+                # )
+                # conn.commit()
+                
+                safe_user = {
+                    "id": existing_user['id'],
+                    "name": existing_user['name'],
+                    "email": existing_user['email'],
+                    "role": existing_user['role'],
+                    "provider": "google",
+                    "firebase_uid": firebase_uid,
+                    "is_verified": True
+                }
+                
+                return jsonify({
+                    "token": token,
+                    "user": safe_user,
+                    "isNewUser": False
+                }), 200
+            else:
+                # New user, need more details for registration
+                return jsonify({
+                    "isNewUser": True,
+                    "message": "User not found. Please complete registration."
+                }), 200
+    
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# Complete Google Registration
+def complete_google_registration(data):
+    firebase_uid = data.get('firebase_uid')
+    firebase_token = data.get('firebase_token')
+    email = data.get('email')
+    name = data.get('name')
+    password = data.get('password')  # Get password from request data
+    phone = data.get('phone')
+    address = data.get('address')
+    city = data.get('city')
+    state = data.get('state')
+    zip_code = data.get('zipCode')
+    
+    if not firebase_uid or not firebase_token or not email or not name or not password:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    # Verify Firebase token
+    try:
+        decoded_token = verify_firebase_token(firebase_token)
+        if not decoded_token or decoded_token.get('uid') != firebase_uid:
+            return jsonify({"error": "Invalid Firebase token"}), 401
+    except Exception as e:
+        return jsonify({"error": f"Firebase verification error: {str(e)}"}), 401
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection error"}), 500
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Check if user exists with this Firebase UID
+        cursor.execute(
+            "SELECT * FROM users WHERE firebase_uid = %s OR email = %s", 
+            (firebase_uid, email)
+        )
+        user = cursor.fetchone()
+        
+        if user:
+            return jsonify({"error": "User already exists"}), 400
+        
+        # Format address
+        full_address = address
+        if city or state or zip_code:
+            full_address = f"{address}, {city}, {state} {zip_code}".strip()
+        
+        # Hash the password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Create new user with hashed password
+        cursor.execute(
+            """
+            INSERT INTO users 
+            (name, email, firebase_uid, password, phone, address, is_verified, 
+             role, created_at, updated_at) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 'client', NOW(), NOW())
+            """, 
+            (name, email, firebase_uid, hashed_password, phone, full_address, True)
+        )
+        conn.commit()
+        
+        new_user_id = cursor.lastrowid
+        
+        # Get the newly created user
+        cursor.execute("SELECT * FROM users WHERE id = %s", (new_user_id,))
+        new_user = cursor.fetchone()
+        
+        # Generate token with all required parameters
+        token = generate_token(new_user_id, email, new_user['role'])
+        
+        safe_user = {
+            "id": new_user['id'],
+            "name": new_user['name'],
+            "email": new_user['email'],
+            "role": new_user['role'],
+            "provider": "google",
+            "firebase_uid": new_user['firebase_uid'],
+            "is_verified": True
+        }
+        
+        return jsonify({
+            "token": token,
+            "user": safe_user,
+            "message": "Registration completed successfully"
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 def register_user(data):
     name = data.get('name')
@@ -171,7 +403,7 @@ def send_verification_otp(data):
         This code will expire in 5 minutes.
         
         Regards,
-        TaxPro Solutions
+        Accverse
         """
         send_email(email, email_subject, email_body)
         
@@ -298,7 +530,7 @@ def resend_verification(data):
     This link will expire in 24 hours.
     
     Regards,
-    TaxPro Solutions
+    Accverse
     """
     send_email(email, email_subject, email_body)
     
@@ -361,7 +593,7 @@ def reset_password_request(data):
     This link will expire in 24 hours.
     
     Regards,
-    TaxPro Solutions
+    Accverse
     """
     send_email(email, email_subject, email_body)
     
@@ -475,6 +707,12 @@ def update_user_profile(token, data):
     
     return jsonify({"message": "Profile updated successfully"}), 200
 
+def serialize_timedelta(obj):
+    """Convert timedelta object to a human-readable string."""
+    if isinstance(obj, timedelta):
+        return str(obj)  # Example: '1:30:00' (1 hour, 30 minutes)
+    return obj
+
 # Appointment Booking Functions
 def get_appointments(token):
     user_id = validate_token(token)
@@ -504,6 +742,11 @@ def get_appointments(token):
     cursor.close()
     conn.close()
     
+    for appointment in appointments:
+        for key, value in appointment.items():
+            if isinstance(value, timedelta):
+                appointment[key] = serialize_timedelta(value)
+
     return jsonify({"appointments": appointments}), 200
 
 def create_appointment(token, data):
@@ -606,7 +849,7 @@ def create_appointment(token, data):
         email_body = f"""
         Hi {user['name']},
         
-        Thank you for booking an appointment with TaxPro Solutions.
+        Thank you for booking an appointment with Accverse.
         
         Appointment Details:
         Service: {service['name']}
@@ -629,7 +872,7 @@ def create_appointment(token, data):
         We will confirm your appointment shortly.
         
         Regards,
-        TaxPro Solutions
+        Accverse
         """
         
         send_email(user['email'], email_subject, email_body)
@@ -740,7 +983,7 @@ def update_appointment(token, appointment_id, data):
     email_body = f"""
     Hi {client['name']},
     
-    Your appointment with TaxPro Solutions has been updated.
+    Your appointment with Accverse has been updated.
     
     Updated Appointment Details:
     Service: {service['name']}
@@ -749,7 +992,7 @@ def update_appointment(token, appointment_id, data):
     Status: {appointment['status']}
     
     Regards,
-    TaxPro Solutions
+    Accverse
     """
     send_email(client['email'], email_subject, email_body)
     
@@ -813,7 +1056,7 @@ def cancel_appointment(token, appointment_id):
     email_body = f"""
     Hi {client['name']},
     
-    Your appointment with TaxPro Solutions has been cancelled.
+    Your appointment with Accverse has been cancelled.
     
     Cancelled Appointment Details:
     Service: {service['name']}
@@ -823,7 +1066,7 @@ def cancel_appointment(token, appointment_id):
     If you did not request this cancellation, please contact us.
     
     Regards,
-    TaxPro Solutions
+    Accverse
     """
     send_email(client['email'], email_subject, email_body)
     
