@@ -42,9 +42,9 @@ const ContactPage = () => {
                   <div className="ml-4">
                     <h3 className="text-lg font-medium text-gray-900">Office Location</h3>
                     <p className="mt-2 text-gray-600">
-                      123 Finance Street<br />
-                      Sydney NSW 2000<br />
-                      Australia
+                      Lorem, ipsum dolor.<br />
+                      Lorem, ipsum dolor.<br />
+                      Lorem.
                     </p>
                   </div>
                 </div>
@@ -59,7 +59,7 @@ const ContactPage = () => {
                     <h3 className="text-lg font-medium text-gray-900">Phone</h3>
                     <p className="mt-2 text-gray-600">
                       Main: +61 2 1234 5678<br />
-                      Toll-free: 1800 TAX PRO
+                      Toll-free: 1800 Accverse
                     </p>
                   </div>
                 </div>

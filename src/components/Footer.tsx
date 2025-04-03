@@ -17,7 +17,7 @@ const Footer = () => {
               <span className="ml-2 text-xl font-bold">Accverse</span>
             </div>
             <p className="text-gray-400 mb-4">
-              Professional accounting and tax services for individuals and businesses. We help you navigate the complex world of finance with ease.
+              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Omnis ut incidunt quod cumque impedit quibusdam saepe quaerat ad! Impedit, unde?
             </p>
             <div className="flex space-x-4">
               <a href="https://facebook.com" className="text-gray-400 hover:text-blue-400" aria-label="Facebook">
@@ -95,7 +95,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <MapPin className="h-5 w-5 text-blue-400 mr-2 mt-0.5" />
-                <span className="text-gray-400">123 Finance Street, Sydney NSW 2000, Australia</span>
+                <span className="text-gray-400">Lorem ipsum dolor sit amet consectetur adipisicing.</span>
               </li>
               <li className="flex items-center">
                 <Phone className="h-5 w-5 text-blue-400 mr-2" />

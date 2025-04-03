@@ -15,7 +15,8 @@ const HomePage = () => {
       icon: <Calculator className="h-6 w-6" />,
       title: "Accounting Solutions",
       description: "Comprehensive accounting services for businesses of all sizes.",
-      features: ["Bookkeeping & Payroll", "Virtual CFO Services", "Financial Statements", "Bank Reconciliation"],
+      // features: ["Bookkeeping & Payroll", "Virtual CFO Services", "Financial Statements", "Bank Reconciliation"],
+      features: ["Bookkeeping & Payroll", "Lorem ipsum dolor", "Lorem ipsum dolor", "Lorem ipsum dolor"],
       link: "/accounting-services",
       color: "blue",
     },
@@ -23,7 +24,8 @@ const HomePage = () => {
       icon: <FileText className="h-6 w-6" />,
       title: "Tax Solutions",
       description: "Expert tax preparation and planning for individuals and businesses.",
-      features: ["Personal & Business Tax", "SMSF Tax Returns", "Tax Planning & Compliance", "ATO Audit Assistance"],
+      // features: ["Personal & Business Tax", "SMSF Tax Returns", "Tax Planning & Compliance", "ATO Audit Assistance"],
+      features: ["Personal & Business Tax", "Lorem ipsum dolor", "Lorem ipsum dolor", "Lorem ipsum dolor"],
       link: "/tax-services",
       color: "green",
     },
@@ -31,11 +33,17 @@ const HomePage = () => {
       icon: <BookOpen className="h-6 w-6" />,
       title: "Online Training",
       description: "Professional development and training for financial literacy.",
+      // features: [
+      //   "Tax Workshops",
+      //   "Accounting Software Training",
+      //   "Financial Management Courses",
+      //   "Customized Business Training",
+      // ],
       features: [
-        "Tax Workshops",
+        "Lorem ipsum dolor",
         "Accounting Software Training",
         "Financial Management Courses",
-        "Customized Business Training",
+        "Lorem ipsum dolor",
       ],
       link: "/training",
       color: "purple",
@@ -106,8 +114,7 @@ const HomePage = () => {
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Why Choose Accverse?</h2>
               <p className="text-lg text-gray-600 mb-8">
-                With over 15 years of experience, we provide expert accounting and tax services that help our clients
-                achieve financial success and peace of mind.
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Excepturi animi in iusto earum. Pariatur vero provident nemo ab, commodi deserunt!
               </p>
 
               <div className="space-y-4">
@@ -118,7 +125,7 @@ const HomePage = () => {
                   <div className="ml-3">
                     <h3 className="text-lg font-medium text-gray-900">Experienced Professionals</h3>
                     <p className="mt-1 text-gray-600">
-                      Our team consists of certified accountants and tax specialists with years of industry experience.
+                      Lorem ipsum dolor, sit amet consectetur adipisicing elit. Laboriosam magnam temporibus labore ea sint, aspernatur in consectetur?
                     </p>
                   </div>
                 </div>
@@ -130,7 +137,7 @@ const HomePage = () => {
                   <div className="ml-3">
                     <h3 className="text-lg font-medium text-gray-900">Personalized Approach</h3>
                     <p className="mt-1 text-gray-600">
-                      We take the time to understand your unique situation and provide tailored solutions.
+                      Lorem ipsum dolor sit amet consectetur adipisicing elit. Soluta ducimus quidem pariatur.
                     </p>
                   </div>
                 </div>
@@ -142,8 +149,7 @@ const HomePage = () => {
                   <div className="ml-3">
                     <h3 className="text-lg font-medium text-gray-900">Cutting-Edge Technology</h3>
                     <p className="mt-1 text-gray-600">
-                      We leverage the latest financial software and secure client portals for efficient service
-                      delivery.
+                      Lorem ipsum dolor sit amet consectetur adipisicing elit. Illo magni iusto dolore enim eius obcaecati.
                     </p>
                   </div>
                 </div>
@@ -155,7 +161,7 @@ const HomePage = () => {
                   <div className="ml-3">
                     <h3 className="text-lg font-medium text-gray-900">Transparent Pricing</h3>
                     <p className="mt-1 text-gray-600">
-                      No hidden fees or surprises. We offer clear, upfront pricing for all our services.
+                      Lorem ipsum dolor, sit amet consectetur adipisicing elit. Recusandae repellat ut earum officiis.
                     </p>
                   </div>
                 </div>
@@ -277,14 +283,14 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-12">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Latest Insights</h2>
-              <p className="text-xl text-gray-600">Stay informed with our latest articles, guides, and updates.</p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Discover More</h2>
+              <p className="text-xl text-gray-600">Stay informed with our latest blogs, webinars, and updates.</p>
             </div>
             <Link
               to="/insights"
               className="hidden md:inline-flex items-center text-blue-600 font-medium hover:text-blue-800"
             >
-              View all insights <ArrowRight className="ml-2 h-4 w-4" />
+              Explore Videos <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
 
@@ -302,10 +308,10 @@ const HomePage = () => {
                   </span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  10 Tax Planning Strategies for Small Business Owners
+                  lorem ipsum dolor sit amet . Quisquam, voluptatibus?
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Discover effective strategies to minimize your tax liability and maximize your business deductions.
+                  Lorem ipsum dolor sit, amet consectetur adipisicing elit. Aspernatur, cupiditate. A tempore quam vero officiis quae aliquid ducimus placeat laudantium?
                 </p>
                 <Link to="/insights/tax-planning-strategies" className="text-blue-600 font-medium hover:text-blue-800">
                   Read more →
@@ -326,10 +332,10 @@ const HomePage = () => {
                   </span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Self-Managed Super Funds: A Comprehensive Guide
+                  Lorem ipsum dolor sit amet. ducimus placeat?
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Everything you need to know about setting up and managing your self-managed super fund.
+                  Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repellendus odit minus iusto laboriosam! Adipisci?
                 </p>
                 <Link to="/insights/smsf-guide" className="text-blue-600 font-medium hover:text-blue-800">
                   Read more →
@@ -349,10 +355,9 @@ const HomePage = () => {
                     Business Growth
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">How a Virtual CFO Can Transform Your Business</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Lorem ipsum dolor sit amet consectetur.</h3>
                 <p className="text-gray-600 mb-4">
-                  Learn how a Virtual CFO can provide strategic financial guidance without the cost of a full-time
-                  executive.
+                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Repudiandae qui, provident ullam dolore eveniet eum ex velit dolor.
                 </p>
                 <Link to="/insights/virtual-cfo-benefits" className="text-blue-600 font-medium hover:text-blue-800">
                   Read more →

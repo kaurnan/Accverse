@@ -55,7 +55,8 @@ const Navbar = () => {
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <Calculator className="h-8 w-8 text-blue-600" />
+              {/* <Calculator className="h-8 w-8 text-blue-600" /> */}
+              <h2 className="text-blue-700">Logo</h2>
               <span className="ml-2 text-xl font-bold text-gray-800">Accverse</span>
             </Link>
           </div>
