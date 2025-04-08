@@ -170,6 +170,55 @@ CREATE TABLE knowledge_articles (
     FOREIGN KEY (author_id) REFERENCES users(id)
 );
 
+
+-- Tax forms table for storing tax form submissions and progress
+CREATE TABLE IF NOT EXISTS tax_forms (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id INT,
+    form_type VARCHAR(50) NOT NULL DEFAULT 'individual', -- 'individual', 'business', 'smsf', etc.
+    form_data JSON NOT NULL,
+    fiscal_year_end DATE,
+    status ENUM('submitted', 'processing', 'completed', 'requires_info') NOT NULL DEFAULT 'submitted',
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Tax form files table for storing uploaded files
+CREATE TABLE IF NOT EXISTS tax_form_files (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tax_form_id VARCHAR(36) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    file_type VARCHAR(100),
+    file_size INT,
+    field_name VARCHAR(100) NOT NULL,
+    upload_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tax_form_id) REFERENCES tax_forms(id) ON DELETE CASCADE
+);
+
+-- Tax form templates table to store available form types
+CREATE TABLE IF NOT EXISTS tax_form_templates (
+    id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    subtitle VARCHAR(255),
+    description TEXT,
+    steps INT NOT NULL DEFAULT 5,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Insert predefined form templates
+INSERT INTO tax_form_templates (id, title, subtitle, description, steps, is_active) VALUES 
+('individual', 'NEW CLIENT TAX CHECKLIST', 'For Individuals & Sole Traders', 'Complete this form if you are an individual or sole trader requiring tax return services.', 5, TRUE),
+('business', 'NEW BUSINESS CLIENT FORM', 'For Companies, Trusts & Partnerships', 'Complete this form if you have a business entity such as a company, trust, or partnership.', 4, TRUE),
+('smsf', 'NEW SMSF CLIENT FORM', 'For Self-Managed Superannuation Funds', 'Complete this form if you have a self-managed superannuation fund requiring compliance services.', 5, TRUE),
+('engagement', 'ENGAGEMENT LETTER', 'For All Business Clients', 'Required engagement letter for all business clients to formalize our services.', 1, TRUE),
+('smsf-establishment', 'SMSF ESTABLISHMENT FORM', 'Set up a new Self-Managed Superannuation Fund', 'Complete this form to establish a new Self-Managed Superannuation Fund.', 1, TRUE),
+('company-registration', 'COMPANY REGISTRATION CHECKLIST', 'Register a new company', 'Complete this checklist to register a new company.', 1, TRUE);
+
 -- Insert sample data for service categories
 INSERT INTO service_categories (name, description) VALUES 
 ('Tax Services', 'Professional tax preparation and planning services'),

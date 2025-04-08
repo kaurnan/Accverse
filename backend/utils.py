@@ -109,6 +109,131 @@ def validate_token(token):
         logger.warning("Invalid token")
         return None
 
+import jwt
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import uuid
+from config import email_config, jwt_config
+import json
+import logging
+import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("api.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Email utility function
+def send_email(to_email, subject, body):
+    try:
+        if email_config.EMAIL_ENABLED:
+            msg = MIMEMultipart()
+            msg['From'] = email_config.EMAIL_FROM
+            msg['To'] = to_email
+            msg['Subject'] = subject
+
+            msg.attach(MIMEText(body, 'plain'))
+
+            server = smtplib.SMTP(email_config.SMTP_SERVER, email_config.SMTP_PORT)
+            server.starttls()
+            server.login(email_config.SMTP_USERNAME, email_config.SMTP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            logger.info(f"Email sent to {to_email} with subject: {subject}")
+        else:
+            # Log email in development mode
+            logger.info(f"DEVELOPMENT MODE: Email to {to_email}")
+            logger.info(f"Subject: {subject}")
+            logger.info(f"Body: {body}")
+    except Exception as e:
+        logger.error(f"Failed to send email: {str(e)}")
+
+# JWT token generation with all parameters
+def generate_token(user_id, email=None, role=None):
+    """
+    Generate a JWT token for authentication
+    
+    Parameters:
+    - user_id: The user's ID (required)
+    - email: The user's email (optional)
+    - role: The user's role (optional)
+    
+    Returns:
+    - JWT token string
+    """
+    payload = {
+        'user_id': user_id,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }
+    
+    # Add optional fields if provided
+    if email:
+        payload['email'] = email
+    if role:
+        payload['role'] = role
+        
+    token = jwt.encode(payload, jwt_config.JWT_SECRET_KEY, algorithm='HS256')
+    return token
+
+# Generate JWT token with just user_id
+def generate_jwt_token(user_id):
+    """
+    Generate a JWT token with just the user ID
+    
+    Parameters:
+    - user_id: The user's ID
+    
+    Returns:
+    - JWT token string
+    """
+    payload = {
+        'user_id': user_id,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }
+    token = jwt.encode(payload, jwt_config.JWT_SECRET_KEY, algorithm='HS256')
+    return token
+
+# JWT token validation
+def validate_token(token):
+    if not token or not token.startswith('Bearer '):
+        logger.warning("Missing or malformed token: %s", token)
+        return None
+    
+    token = token.replace('Bearer ', '')
+    logger.info("Decoding token: %s", token)  # Debugging line
+
+    
+    try:
+        payload = jwt.decode(token, jwt_config.JWT_SECRET_KEY, algorithms=['HS256'])
+        return payload['user_id']
+    except jwt.ExpiredSignatureError:
+        logger.warning("Token expired")
+        return None
+    except jwt.InvalidTokenError:
+        logger.warning("Invalid token")
+        return None
+
+# Extract user_id from token
+def get_user_id_from_token(token):
+    """
+    Extract user_id from a JWT token
+    
+    Parameters:
+    - token: The JWT token string
+    
+    Returns:
+    - user_id if token is valid, None otherwise
+    """
+    return validate_token(token)
+
+
 # Generate a unique identifier
 def generate_uuid():
     return str(uuid.uuid4())

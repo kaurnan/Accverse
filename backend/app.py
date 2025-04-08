@@ -14,6 +14,8 @@ from methods import (
     delete_calendar_event, sync_external_calendar,
     get_knowledge_base, get_knowledge_article, 
     google_auth, complete_google_registration,
+    submit_tax_form, save_tax_form_progress, load_tax_form_progress, get_tax_form_templates
+
 )
 from firebase_setup  import verify_firebase_token
 from microsoft_teams import MicrosoftTeamsIntegration
@@ -21,7 +23,9 @@ from config import app_config
 import utils
 import logging 
 import datetime
+import json
 from utils import validate_token
+import os 
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,6 +40,13 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(app_config)
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+TAX_FORM_UPLOADS = os.path.join(UPLOAD_FOLDER, 'tax_forms')
+os.makedirs(TAX_FORM_UPLOADS, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['TAX_FORM_UPLOADS'] = TAX_FORM_UPLOADS
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 
 # Initialize Microsoft Teams integration
 teams_integration = MicrosoftTeamsIntegration()
@@ -482,6 +493,63 @@ def knowledge_base_list():
 @app.route('/api/content/knowledge-base/<int:id>', methods=['GET'])
 def knowledge_article_details(id):
     return get_knowledge_article(id)
+
+# Tax Solutions Form Endpoints
+@app.route('/api/tax-solutions/templates', methods=['GET'])
+def get_templates():
+    try:
+        # Get available tax form templates
+        return get_tax_form_templates()
+    except Exception as e:
+        logger.error(f"Get tax templates error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tax-solutions/submit', methods=['POST'])
+def tax_form_submit():
+    try:
+        # Get token from authorization header (if available)
+        token = request.headers.get('Authorization')
+        logger.info(f"Tax form submission received with files: {request.files}")
+        
+        # Log all request data for debugging
+        form_data = {}
+        for key in request.form:
+            form_data[key] = request.form[key]
+        logger.info(f"Form data: {form_data}")
+        
+        # Log all files received
+        for file_key in request.files:
+            file = request.files[file_key]
+            logger.info(f"File received: {file_key}, filename: {file.filename}")
+        
+        # Submit tax form data and files
+        return submit_tax_form(token, request)
+    except Exception as e:
+        logger.error(f"Tax form submission error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tax-solutions/save-progress', methods=['POST'])
+def tax_form_save_progress():
+    try:
+        # Get token from authorization header (if available)
+        token = request.headers.get('Authorization')
+        # Save form progress
+        data = request.get_json()
+        return save_tax_form_progress(token, data)
+    except Exception as e:
+        logger.error(f"Tax form save progress error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tax-solutions/load-progress/<string:form_id>', methods=['GET'])
+def tax_form_load_progress(form_id):
+    try:
+        # Get token from authorization header (if available)
+        token = request.headers.get('Authorization')
+        # Load saved form progress
+        return load_tax_form_progress(token, form_id)
+    except Exception as e:
+        logger.error(f"Tax form load progress error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 # @app.route('/api/content/knowledge-base', methods=['POST'])
 # def knowledge_article_create():

@@ -5,7 +5,9 @@ import jwt
 import datetime
 import bcrypt
 import uuid
-from utils import send_email, generate_token, validate_token
+from utils import send_email, generate_token, validate_token, get_user_id_from_token
+import requests
+import firebase_admin
 import random
 from microsoft_teams import MicrosoftTeamsIntegration
 from firebase_setup import verify_firebase_token
@@ -13,6 +15,12 @@ teams_integration = MicrosoftTeamsIntegration()
 import logging 
 logger = logging.getLogger(__name__)
 from datetime import timedelta
+import json
+import os
+import uuid
+
+# form_id = str(uuid.uuid4())
+# form_data['id'] = form_id 
 
 # Database Connection Function
 def get_db_connection():
@@ -1172,6 +1180,304 @@ def get_service_categories():
     conn.close()
     
     return jsonify({"categories": categories}), 200
+
+def get_tax_form_templates():
+    """
+    Get available tax form templates
+    """
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"error": "Database connection error"}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT id, title, subtitle, description, steps, is_active 
+            FROM tax_form_templates
+            WHERE is_active = TRUE
+        """)
+        
+        templates = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({"templates": templates}), 200
+    except Exception as e:
+        logger.error(f"Error getting tax form templates: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+        
+# Tax Solutions Form functions
+def submit_tax_form(token, request):
+    """Handle tax form submission with file uploads"""
+    
+    logger.info("Tax form submission received")
+    
+    # Get user ID if authenticated
+    user_id = None
+    if token:
+        user_id = get_user_id_from_token(token)
+    
+    # Get form data
+    form_data = {}
+
+    if request.content_type.startswith('application/json'):
+        form_data = request.get_json() or {}
+    else:
+        for key in request.form:
+            form_data[key] = request.form.get(key)
+    
+    # Validate required fields
+    required_fields = ['firstName', 'lastName', 'email', 'signature']
+    for field in required_fields:
+        if field not in form_data or not form_data[field]:
+            logger.error(f"Missing required field: {field}")
+            return {'error': f'Missing required field: {field}'}, 400
+    
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return {'error': 'Database connection error'}, 500
+        
+        cursor = conn.cursor(dictionary=True)
+        
+        # Store form data as JSON
+        form_json = json.dumps(form_data)
+        
+        # Get fiscal year from form data
+        fiscal_year = None
+        if 'fiscalYear' in form_data and form_data['fiscalYear']:
+            fiscal_year = form_data['fiscalYear']
+        
+        # Insert record into tax_forms table
+        tax_form_id = str(uuid.uuid4())
+
+        insert_form_query = """
+        INSERT INTO tax_forms 
+        (id, user_id, form_data, fiscal_year_end, status, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+        """
+
+        cursor.execute(
+            insert_form_query,
+            (tax_form_id, user_id, form_json, fiscal_year, 'submitted')
+        )
+        
+        tax_form_id = cursor.lastrowid
+        
+        # Handle file uploads if any
+        if request.files:
+            upload_folder = os.path.join(app_config.UPLOAD_FOLDER, 'tax_forms', str(tax_form_id))
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            file_fields = ['identification', 'privateHealthFile', 'supportingDocs']
+            
+            for field in file_fields:
+                if field in request.files and request.files[field].filename:
+                    file = request.files[field]
+                    
+                    # Create secure filename and save file
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(upload_folder, filename)
+                    
+                    # Save the file
+                    file.save(file_path)
+                    
+                    # Store file info in database
+                    file_size = os.path.getsize(file_path)
+                    file_type = file.content_type if hasattr(file, 'content_type') else None
+                    
+                    insert_file_query = """
+                    INSERT INTO tax_form_files 
+                    (tax_form_id, file_name, file_path, file_type, file_size, field_name)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """
+                    
+                    cursor.execute(
+                        insert_file_query, 
+                        (tax_form_id, filename, file_path, file_type, file_size, field)
+                    )
+        
+        conn.commit()
+        
+        # Create notification for admins that a new tax form was submitted
+        try:
+            # First, query for admin users
+            admin_query = "SELECT id FROM users WHERE role = 'admin'"
+            cursor.execute(admin_query)
+            admin_users = cursor.fetchall()
+            
+            # Create notification for each admin
+            for admin in admin_users:
+                notification_query = """
+                INSERT INTO notifications 
+                (user_id, title, message, type, is_read, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                """
+                
+                notification_title = "New Tax Form Submission"
+                client_name = f"{form_data.get('firstName', '')} {form_data.get('lastName', '')}"
+                notification_message = f"Client {client_name} has submitted a new tax form."
+                
+                cursor.execute(
+                    notification_query,
+                    (admin['id'], notification_title, notification_message, 'tax_form', False)
+                )
+        
+            conn.commit()
+        except Exception as e:
+            logger.error(f"Error creating admin notifications: {str(e)}")
+            # Continue with the process even if notification creation fails
+        
+        cursor.close()
+        conn.close()
+        
+        return {'success': True, 'id': tax_form_id}, 201
+        
+    except Exception as e:
+        logger.error(f"Error submitting tax form: {str(e)}")
+        return {'error': str(e)}, 500
+
+def save_tax_form_progress(token, data):
+    """Save tax form progress to database"""
+    
+    logger.info("Saving tax form progress")
+    
+    # Get user ID if authenticated
+    user_id = None
+    if token:
+        user_id = get_user_id_from_token(token)
+    
+    try:
+        # Extract relevant data
+        email = data.get('email', '')
+        form_id = str(uuid.uuid4()) if 'id' not in data else data.get('id')
+        
+        # Store form data
+        form_json = json.dumps(data)
+        
+        conn = get_db_connection()
+        if not conn:
+            return {'error': 'Database connection error'}, 500
+        
+        cursor = conn.cursor(dictionary=True)
+        
+        # Check if a progress record already exists for this user/form combination
+        if user_id:
+            check_query = """
+            SELECT id FROM tax_forms 
+            WHERE user_id = %s AND id = %s AND status = 'submitted'
+            """
+            cursor.execute(check_query, (user_id, form_id))
+        else:
+            # For non-authenticated users, use email as identifier
+            check_query = """
+            SELECT id FROM tax_forms 
+            WHERE form_data LIKE %s AND id = %s AND status = 'submitted'
+            """
+            email_pattern = f'%"email":"{email}"%'
+            cursor.execute(check_query, (email_pattern, form_id))
+            
+        existing_form = cursor.fetchone()
+        
+        if existing_form:
+            # Update existing record
+            update_query = """
+            UPDATE tax_forms 
+            SET form_data = %s, updated_at = NOW()
+            WHERE id = %s
+            """
+            cursor.execute(update_query, (form_json, existing_form['id']))
+            saved_id = existing_form['id']
+        else:
+            # Get fiscal year from form data
+            fiscal_year = None
+            if 'fiscalYear' in data and data['fiscalYear']:
+                fiscal_year = data['fiscalYear']
+                
+            # Insert new record
+            insert_query = """
+            INSERT INTO tax_forms 
+            (id, user_id, form_data, fiscal_year_end, status, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+            """
+            
+            cursor.execute(
+                insert_query, 
+                (form_id, user_id, form_json, fiscal_year, 'submitted')
+            )
+            saved_id = form_id
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {'success': True, 'id': saved_id}, 200
+        
+    except Exception as e:
+        logger.error(f"Error saving tax form progress: {str(e)}")
+        return {'error': str(e)}, 500
+
+def load_tax_form_progress(token, form_id):
+    """Load saved tax form progress from database"""
+    
+    logger.info(f"Loading tax form progress for form ID: {form_id}")
+    
+    # Get user ID if authenticated
+    user_id = None
+    if token:
+        user_id = get_user_id_from_token(token)
+    
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return {'error': 'Database connection error'}, 500
+        
+        cursor = conn.cursor(dictionary=True)
+        
+        # Query to get form data
+        query = """
+        SELECT form_data, fiscal_year_end, status, created_at, updated_at
+        FROM tax_forms WHERE id = %s
+        """
+        
+        cursor.execute(query, (form_id,))
+        saved_form = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not saved_form:
+            return {'error': 'Form not found'}, 404
+            
+        # If authenticated, check if the form belongs to the user
+        if user_id:
+            form_data = json.loads(saved_form['form_data'])
+            if 'email' in form_data:
+                # Get user email from DB
+                conn = get_db_connection()
+                cursor = conn.cursor(dictionary=True)
+                
+                cursor.execute("SELECT email FROM users WHERE id = %s", (user_id,))
+                user = cursor.fetchone()
+                
+                cursor.close()
+                conn.close()
+                
+                if user and user['email'] != form_data.get('email'):
+                    return {'error': 'Unauthorized access to form'}, 403
+        
+        # Return saved form data
+        return {
+            'form_data': json.loads(saved_form['form_data']),
+            'fiscal_year_end': saved_form['fiscal_year_end'].isoformat() if saved_form['fiscal_year_end'] else None,
+            'status': saved_form['status'],
+            'created_at': saved_form['created_at'].isoformat(),
+            'updated_at': saved_form['updated_at'].isoformat()
+        }, 200
+        
+    except Exception as e:
+        logger.error(f"Error loading tax form progress: {str(e)}")
+        return {'error': str(e)}, 500
 
 # Payment Processing Functions
 def get_payments(token):
