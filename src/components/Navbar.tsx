@@ -72,7 +72,7 @@ const Navbar = () => {
                     <Link to="/accounting-services" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       Accounting Solutions
                     </Link>
-                    <Link to="/tax-services" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <Link to="/tax-forms" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       Tax Solutions
                     </Link>
                     <Link to="/training" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -222,7 +222,7 @@ const Navbar = () => {
                 <Link to="/accounting-services" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Accounting Solutions
                 </Link>
-                <Link to="/tax-services" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <Link to="/tax-forms" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Tax Solutions
                 </Link>
                 <Link to="/training" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
