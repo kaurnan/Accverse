@@ -23,6 +23,16 @@ interface Appointment {
   notes?: string;
 }
 
+interface AppointmentCardProps {
+  id: number;
+  service_name: string;
+  appointment_date: string;
+  appointment_time: string;
+  status: string;
+  notes: string;
+  teams_url: string | null;
+}
+
 const AppointmentsPage = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,9 +73,28 @@ const AppointmentsPage = () => {
   };
 
   // Function to format date for better display
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  // const formatDate = (dateString: string) => {
+  //   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  //   return new Date(dateString).toLocaleDateString(undefined, options);
+  const formatAppointments = (appointments: any[]): AppointmentCardProps[] => {
+    return appointments.map(appointment => {
+      let teamsUrl = null;
+      const notes = appointment.notes || '';
+      
+      if (notes.includes('Microsoft Teams Meeting:')) {
+        teamsUrl = notes.split('Microsoft Teams Meeting:')[1].trim().split('\n')[0].trim();
+      }
+      
+      return {
+        id: appointment.id,
+        service_name: appointment.service_name,
+        appointment_date: new Date(appointment.appointment_date).toLocaleDateString(),
+        appointment_time: appointment.appointment_time,
+        status: appointment.status,
+        notes: notes,
+        teams_url: teamsUrl
+      };
+    });
   };
 
   const handleRetry = () => {

@@ -330,6 +330,33 @@ export const serviceService = {
   },
 };
 
+// Tax solutions API endpoints
+export const taxSolutionsService = {
+  submitTaxForm: async (formData: FormData) => {
+    const response = await apiClient.post("/tax-solutions/submit", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+  
+  saveProgress: async (formData: any) => {
+    const response = await apiClient.post("/tax-solutions/save-progress", formData);
+    return response.data;
+  },
+  
+  loadProgress: async (formId: string) => {
+    const response = await apiClient.get(`/tax-solutions/load-progress/${formId}`);
+    return response.data;
+  },
+  
+  getFormTemplates: async () => {
+    const response = await apiClient.get("/tax-solutions/templates");
+    return response.data;
+  }
+};
+
 // Appointment API endpoints
 export const appointmentService = {
   getAppointments: async () => {

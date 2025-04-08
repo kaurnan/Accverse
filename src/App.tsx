@@ -16,6 +16,13 @@ import AppointmentsPage from './pages/AppointmentsPage';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import CompleteRegistrationPage from "./pages/CompleteRegistrationPage";
+import TaxSolutionsPage from './pages/TaxSolutionsPage';
+import TaxFormSelectPage from './pages/TaxFormSelectPage';
+import BusinessTaxFormPage from './pages/BusinessTaxFormPage';
+import SMSFTaxFormPage from './pages/SMSFTaxFormPage';
+import EngagementLetterPage from './pages/EngagementLetterPage';
+import SMSFEstablishmentPage from './pages/SMSFEstablishmentPage';
+import CompanyRegistrationPage from './pages/CompanyRegistrationPage';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -50,6 +57,15 @@ const AppRoutes = () => {
       <Route path="/complete-registration" element={<CompleteRegistrationPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       
+      {/* Tax Solutions Routes */}
+      <Route path="/tax-forms" element={<TaxFormSelectPage />} />
+      <Route path="/tax-solutions" element={<TaxSolutionsPage />} />
+      <Route path="/tax-solutions/business" element={<BusinessTaxFormPage />} />
+      <Route path="/tax-solutions/smsf" element={<SMSFTaxFormPage />} />
+      <Route path="/tax-solutions/engagement" element={<EngagementLetterPage />} />
+      <Route path="/tax-solutions/smsf-establishment" element={<SMSFEstablishmentPage />} />
+      <Route path="/tax-solutions/company-registration" element={<CompanyRegistrationPage />} />
+
       {/* Protected routes */}
       <Route path="/booking" element={
         <ProtectedRoute>

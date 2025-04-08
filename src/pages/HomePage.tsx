@@ -26,7 +26,7 @@ const HomePage = () => {
       description: "Expert tax preparation and planning for individuals and businesses.",
       // features: ["Personal & Business Tax", "SMSF Tax Returns", "Tax Planning & Compliance", "ATO Audit Assistance"],
       features: ["Personal & Business Tax", "Lorem ipsum dolor", "Lorem ipsum dolor", "Lorem ipsum dolor"],
-      link: "/tax-services",
+      link: "/tax-forms",
       color: "green",
     },
     {
